@@ -1,1 +1,1 @@
-gunicorn app:app.server --bind 0.0.0.0:8051
+web: gunicorn main:app.server --bind 0.0.0.0:8051
