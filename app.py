@@ -16,6 +16,9 @@ external_stylesheets = [
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
+# Expose the underlying Flask server for Gunicorn
+server = app.server
+
 app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '100vh'}, children=[
     dbc.Navbar(
         children=[
@@ -117,7 +120,8 @@ app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '100vh'}
     dcc.Store(id='upload-status', data={'uploading': False})
 ])
 
-@ callback(
+
+@callback(
     [Output('progress-bar', 'value'),
      Output('progress-bar', 'label'),
      Output('progress-percentage', 'children'),
@@ -127,7 +131,6 @@ app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '100vh'}
     [State('upload-status', 'data'),
      State('upload-data', 'filename')]
 )
-
 
 def update_progress(contents, n_intervals, status, filename):
     ctx = dash.callback_context
@@ -175,7 +178,6 @@ def process_data(contents, filename):
     decoded = base64.b64decode(content_string)
 
     try:
-        # Gerçek dosya işleme
         start_time = time.time()
         if 'csv' in filename.lower():
             df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
@@ -238,4 +240,9 @@ def update_charts(data):
 if __name__ == '__main__':
     # Render/Heroku gibi ortamlarda PORT kullan, yoksa 8051’le yerel çalış
     port = int(os.environ.get("PORT", 8051))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    server.run(host="0.0.0.0", port=port, debug=True)
+
+# ----------------------------------------------------------------
+# To deploy with Gunicorn, use:
+# > gunicorn app:server
+
