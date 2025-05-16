@@ -1,3 +1,5 @@
+import os
+
 import dash
 from dash import dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
@@ -234,4 +236,6 @@ def update_charts(data):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8051)
+    # Render/Heroku gibi ortamlarda PORT kullan, yoksa 8051’le yerel çalış
+    port = int(os.environ.get("PORT", 8051))
+    app.run(host="0.0.0.0", port=port, debug=True)
