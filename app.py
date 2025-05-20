@@ -8,6 +8,8 @@ import base64
 import io
 import time
 
+from calculations import TimeToRpmRsp, RpmToTimeRsp, TimeToRpmCsv, RpmToTimeCsv
+
 # Create the Dash app
 dash_app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.BOOTSTRAP,
