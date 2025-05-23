@@ -9,6 +9,7 @@ from rpc_reader.rpc_reader import ReadRPC
 import sys
 sys.stdin.reconfigure(encoding='utf-8')
 sys.stdout.reconfigure(encoding='utf-8')
+import plotly.express as px
 
 
 class TimeToRpmRsp:
@@ -217,7 +218,7 @@ class RpmToTimeRsp:
         return rpm_list, dB_values
 
 class TimeToRpmCsv:
-    def analyze_time_series(self, time_rpm, rpm, time_pa, pa, n_blocks):
+    def analyze_time_series(time_rpm, rpm, time_pa, pa, n_blocks):
         # Veri tiplerini numpy array'e çevirme
         time_rpm = np.array(time_rpm)
         rpm = np.array(rpm)
@@ -264,8 +265,43 @@ class TimeToRpmCsv:
             rms_pas.append(overall)
             block_starts.append(t0)
             block_ends.append(t1)
+        df = pd.DataFrame({
+            'rpm': mean_rpms,
+            'rms': rms_pas
+        })
+        return df
 
-        return mean_rpms, rms_pas
+    def plotRpmToTime(df: pd.DataFrame):
+        """
+        İki sütunlu bir DataFrame alarak scatter plot oluşturur.
+
+        Args:
+            df: İki sütunlu pandas DataFrame
+
+        Returns:
+            Plotly Figure nesnesi
+        """
+        # DataFrame'in iki sütunu olduğunu kontrol et
+        if df.shape[1] != 2:
+            raise ValueError(f"DataFrame tam olarak iki sütun içermelidir. Şu anda {df.shape[1]} sütun var.")
+
+        # Sütun adlarını al
+        x_column = df.columns[0]
+        y_column = df.columns[1]
+
+        # Scatter plot oluştur
+        fig = px.scatter(df, x=x_column, y=y_column,
+                         title=f"{x_column} ve {y_column} Karşılaştırması",
+                         template="plotly_white")
+
+        # Grafik ayarları
+        fig.update_layout(
+            plot_bgcolor='rgba(240,240,240,1)',
+            paper_bgcolor='rgba(255,255,255,0.8)'
+        )
+
+        return fig
+
 
 class RpmToTimeCsv:
     def calculate_sample_rate(self, t_data, pa_data):

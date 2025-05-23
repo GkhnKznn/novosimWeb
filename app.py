@@ -42,9 +42,9 @@ dash_app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '10
 
     dbc.Container([
         dbc.Row([
-            # SOL SÜTUN (Tüm bileşenler korundu)
+            # SOL SÜtUN (Tüm bileşenler korundu)
             dbc.Col(width=3, children=[
-                # DOSYA YÜKLEME KARTI
+                # DOSYA YÜkLEME KARTI
                 dbc.Card(className='shadow mb-4', children=[
                     dbc.CardBody([
                         html.H4("Veri Yükleme", className='text-primary mb-4'),
@@ -76,30 +76,38 @@ dash_app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '10
                     ])
                 ]),
 
-                # İŞLEMLER KARTI (Düzeltilmiş ID'ler)
+                # İŞLEMLER KARTI (Güncellendi)
                 dbc.Card(className='shadow mb-4', children=[
                     dbc.CardBody([
                         html.H4("İşlemler", className='text-primary mb-4'),
                         dbc.Form([
+                            dbc.Label("Overall", className='mb-2'),
+                            dcc.RadioItems(
+                                id='overall-selection',
+                                options=[
+                                    {'label': ' overallVsTime', 'value': 'overallVsTime'},
+                                    {'label': ' overallVsrpm', 'value': 'overallVsrpm'}
+                                ],
+                                value='overallVsTime',
+                                labelStyle={'display': 'block'},
+                                className='mb-3'
+                            ),
+
                             dbc.Label("Seçenekler:", className='mb-2'),
                             dcc.Checklist(
-                                id='islemler-checklist-unique',  # Benzersiz ID
+                                id='islemler-checklist-unique',
                                 options=[
-                                    {'label': ' Deneme 1', 'value': 'deneme1'},
-                                    {'label': ' Deneme 2', 'value': 'deneme2'}
+                                    {'label': ' A-weighting', 'value': 'a_weighting'}
                                 ],
                                 labelStyle={'display': 'block'},
                                 className='mb-3'
                             ),
-                            dcc.Dropdown(
-                                id='islemler-dropdown-unique',  # Benzersiz ID
-                                options=[
-                                    {'label': 'Deneme 1', 'value': 'deneme1'},
-                                    {'label': 'Deneme 2', 'value': 'deneme2'}
-                                ],
-                                placeholder="Seçim Yapın...",
-                                className='mb-3'
-                            ),
+
+                            dbc.Label("Parametreler:", className='mb-2'),
+                            dbc.Input(id='maxRpm', placeholder='maxRpm', type='number', className='mb-2'),
+                            dbc.Input(id='minRpm', placeholder='minRpm', type='number', className='mb-2'),
+                            dbc.Input(id='increment', placeholder='increment', type='number', className='mb-3'),
+
                             dbc.Button(
                                 "Test Yap",
                                 id='test-buton',
@@ -112,7 +120,7 @@ dash_app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '10
                 ])
             ]),
 
-            # SAĞ SÜTUN
+            # SAĞ SÜtUN
             dbc.Col(width=9, children=[
                 dbc.Row([dbc.Col(dcc.Graph(id='main-chart'))], className='mb-4'),
                 dbc.Row([
@@ -129,37 +137,50 @@ dash_app.layout = html.Div(style={'backgroundColor': '#f8f9fa', 'minHeight': '10
     dcc.Store(id='upload-status', data={'uploading': False})
 ])
 
-# CALLBACK'LER (Öncekiyle aynı, sadece ID'ler güncellendi)
+
+
 @dash_app.callback(
     Output('test-chart', 'figure'),
     [Input('test-buton', 'n_clicks')],
-    [State('stored-data', 'data')]
+    [
+        State('stored-data', 'data'),
+        State('islemler-checklist-unique', 'value'),
+        State('maxRpm', 'value'),
+        State('minRpm', 'value'),
+        State('increment', 'value')
+    ]
 )
-def generate_test_chart(n_clicks, data):
+def generate_test_chart(n_clicks, data, checklist_values, max_rpm, min_rpm, increment, overall_selection):
     if n_clicks == 0 or data is None:
         return dash.no_update
 
     try:
         df = pd.read_json(data, orient='split')
 
-        if len(df.columns) < 2:
-            raise ValueError("En az 2 sütun gereklidir")
+        required_columns = ['s', 'Pa', 'rpm']
+        if not all(col in df.columns for col in required_columns):
+            raise ValueError("Gerekli sütunlar eksik: 's', 'Pa', 'rpm'")
 
-        fig = px.scatter(
-            df,
-            x=df.columns[0],
-            y=df.columns[1],
-            title=f"Test Grafiği (Tıklanma: {n_clicks})",
-            labels={
-                df.columns[0]: "X Ekseni",
-                df.columns[1]: "Y Ekseni"
-            },
-            template='plotly_white'
-        )
-        fig.update_layout(
-            plot_bgcolor='rgba(245,245,245,1)',
-            paper_bgcolor='rgba(255,255,255,0.8)'
-        )
+        s = df['s']
+        pa = df['Pa']
+        rpm = df['rpm']
+
+        is_a_weighting = 'a_weighting' in checklist_values if checklist_values else False
+
+        if overall_selection == 'overallVsTime':
+            rpm_step = increment
+            max_rpm_data = max_rpm
+            min_rpm_data = min_rpm
+            n_blocks = int((max_rpm_data - min_rpm_data) / rpm_step) + 1
+            #analyzed_data = TimeToRpmCsv.analyze_time_series()
+            #fig = TimeToRpmCsv.plotRpmToTime(analyzed_data)
+        elif overall_selection == 'overallVsrpm':
+            # Örnek: Başka bir analiz fonksiyonu olabilir
+            pass
+            #fig = TimeToRpmCsv.plotTimeToRpm(analyzed_data)
+        else:
+            fig = px.scatter(title="Bilinmeyen overall seçimi")
+
         return fig
 
     except Exception as e:
