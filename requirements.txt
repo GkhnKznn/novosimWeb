@@ -5,3 +5,7 @@ plotly
 gunicorn
 openpyxl
 matplotlib
+
+# waveform_analysis için gerekenler
+soundfile
+scipy
