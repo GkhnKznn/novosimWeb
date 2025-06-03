@@ -349,8 +349,8 @@ dash_app.layout = html.Div(style=modern_styles['main_container'], children=[
     ], fluid=True),
 
     dcc.Interval(id='progress-interval', interval=100, n_intervals=0),
-    dcc.Store(id='stored-data'),
-    dcc.Store(id='upload-status', data={'uploading': False})
+    dcc.Store(id='stored-data', storage_type='memory'),
+    dcc.Store(id='upload-status',storage_type='memory', data={'uploading': False})
 ])
 
 
@@ -585,16 +585,18 @@ def process_data(contents, filename):
             rpc.parse()
             df = rpc.to_dataframe()
             # İstenen sütunları seç
-            selected_columns = ['Time (s)', 'AI C-16/MidSeatMic', 'CNT A-1/EngRpm']
-            df_filtered = df[selected_columns]
-
-            # Kolon isimlerini sadeleştir
-            df = df_filtered.rename(columns={
+            # Sadece gerekli sütunları seç ve isimlendir
+            df = df[['Time (s)', 'AI C-16/MidSeatMic', 'CNT A-1/EngRpm']].rename(columns={
                 'Time (s)': 's',
                 'AI C-16/MidSeatMic': 'pa',
                 'CNT A-1/EngRpm': 'rpm'
             })
-
+            # Veri tiplerini optimize et
+            df = df.astype({
+                's': 'float32',
+                'pa': 'float32',
+                'rpm': 'float32'
+            })
 
         else:
             raise ValueError("Geçersiz dosya formatı!")
