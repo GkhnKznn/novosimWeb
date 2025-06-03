@@ -6,3 +6,4 @@ gunicorn
 matplotlib
 soundfile
 scipy
+streamlit
